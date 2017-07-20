@@ -33,7 +33,7 @@ class PulsedAO(object):
     """Provides pulsed analog output. Provides two output forms: 1. set ao channels permanently to a given value.
     2. Output N values along with a square wave with given seconds per point."""
 
-    def __init__(self, channels, square_wave_device, seconds_per_point, duty_cycle=0.5, range=(-10,10), transfer_timeout=1.0):
+    def __init__(self, channels, square_wave_device, seconds_per_point, duty_cycle=0.5, range=(0,10), transfer_timeout=1.0):
 
         # we start with unknown length
         self._length = None
@@ -117,8 +117,8 @@ class PulsedAO(object):
 
 class HybridScannerTimeTaggerNI():
 
-    def __init__(self, analog_channels, square_wave_device, time_tagger_serial, time_tagger_count_channel, time_tagger_marker_channel, seconds_per_point=1e-3, duty_cycle=0.5, voltage_range=(0.,10.), x_range=(0.,100.), y_range=(0.,100), z_range=(0.,20.)):
-        self._pulsed_ao = PulsedAO(channels=analog_channels, square_wave_device=square_wave_device, seconds_per_point=seconds_per_point, duty_cycle=duty_cycle, range=voltage_range)
+    def __init__(self, analog_channels, square_wave_device, time_tagger_serial, time_tagger_count_channel, time_tagger_marker_channel, seconds_per_point=1e-3, duty_cycle=0.5, voltage_range_xy=(-5.,5.),voltage_range_z=(0.,5.), x_range=(0.,100.), y_range=(0.,100), z_range=(0.,20.)):
+        self._pulsed_ao = PulsedAO(channels=analog_channels, square_wave_device=square_wave_device, seconds_per_point=seconds_per_point, duty_cycle=duty_cycle, range=(min([min(voltage_range_xy),min(voltage_range_z)]),max([max(voltage_range_xy),max(voltage_range_z)])))
         TimeTagger._Tagger.setSerial(time_tagger_serial)
         self._N = None # we do not know the length of scan line yet
         self._x0 = x_range[0]
@@ -131,6 +131,9 @@ class HybridScannerTimeTaggerNI():
         self.setPosition(self._x0, self._y0, self._z0)
         self._time_tagger_count_channel=time_tagger_count_channel
         self._time_tagger_marker_channel=time_tagger_marker_channel
+        
+        self.voltage_range_xy = voltage_range_xy
+        self.voltage_range_z = voltage_range_z
         
         self.overflow = TimeTagger.OverFlow()
                 
@@ -251,9 +254,10 @@ class HybridScannerTimeTaggerNI():
         y1 = self._y1
         z0 = self._z0
         z1 = self._z1
-        return numpy.vstack( ( 10.0 / (x1-x0) * (Pos[0]-x0),
-                               10.0 / (y1-y0) * (Pos[1]-y0),
-                               10.0 / (z1-z0) * (Pos[2]-z0) ) )
+        # Michael adjusted this so the xy and z voltage ranges are different
+        return numpy.vstack((self.voltage_range_xy[1]-self.voltage_range_xy[0])/(x1-x0) * (Pos[0]-x0) + self.voltage_range_xy[0],
+                            (self.voltage_range_xy[1]-self.voltage_range_xy[0])/(y1-y0) * (Pos[1]-y0) + self.voltage_range_xy[0],
+                            (self.voltage_range_z[1]-self.voltage_range_z[0])/(z1-z0) * (Pos[2]-z0) + self.voltage_range_z[0])
 
     def Count(self):
         """Return a single count."""
