@@ -336,13 +336,13 @@ class Scanner( MultiBoard ):
         self.invert_z = invert_z
         self.swap_xy = swap_xy
 
-    def getXRange(self):
+    def get_x_range(self):
         return self.xRange
 
-    def getYRange(self):
+    def get_y_range(self):
         return self.yRange
 
-    def getZRange(self):
+    def get_z_range(self):
         return self.zRange
 
     def setx(self, x):
@@ -350,7 +350,7 @@ class Scanner( MultiBoard ):
         """
         if self.AOLength() != 1:
             self.setAOLength(1)
-        self.WriteAO(self.PosToVolt((x, self.y, self.z)), start=True)
+        self.WriteAO(self.pos_to_volt((x, self.y, self.z)), start=True)
         self.x = x
 
     def sety(self, y):
@@ -358,7 +358,7 @@ class Scanner( MultiBoard ):
         """
         if self.AOLength() != 1:
             self.setAOLength(1)
-        self.WriteAO(self.PosToVolt((self.x, y, self.z)), start=True)
+        self.WriteAO(self.pos_to_volt((self.x, y, self.z)), start=True)
         self.y = y
 
     def setz(self, z):
@@ -366,10 +366,10 @@ class Scanner( MultiBoard ):
         """
         if self.AOLength() != 1:
             self.setAOLength(1)
-        self.WriteAO(self.PosToVolt((self.x, self.y, z)), start=True)
+        self.WriteAO(self.pos_to_volt((self.x, self.y, z)), start=True)
         self.z = z
 
-    def scanLine(self, Line, SecondsPerPoint, return_speed=None):
+    def scan_line(self, Line, SecondsPerPoint, return_speed=None):
         """Perform a line scan. If return_speed is not None, return to beginning of line
         with a speed 'return_speed' times faster than the speed currently set.
         """
@@ -390,7 +390,7 @@ class Scanner( MultiBoard ):
             self._trigger_task.Write(numpy.array((0,0), dtype=numpy.uint8) )
 
         # acquire line
-        self.WriteAO( self.PosToVolt(Line) )
+        self.WriteAO( self.pos_to_volt(Line) )
 
         self.StartAO()
         self.StartCI()
@@ -412,7 +412,7 @@ class Scanner( MultiBoard ):
 
         if return_speed is not None:
             self.setTiming(SecondsPerPoint*0.5/return_speed, SecondsPerPoint*0.5/return_speed)
-            self.WriteAO( self.PosToVolt(Line[:,::-1]) )
+            self.WriteAO( self.pos_to_volt(Line[:,::-1]) )
             self.StartAO()
             self.StartCI()
             self.StartCO()
@@ -424,17 +424,18 @@ class Scanner( MultiBoard ):
 
         return data[1:] * self._f / self._DutyCycle
 
-    def setPosition(self, x, y, z):
+    def set_position(self, x, y, z):
         """Move stage to x, y, z"""
         if self.AOLength() != 1:
             self.setAOLength(1)
-        self.WriteAO(self.PosToVolt((x, y, z)), start=True)
+        self.WriteAO(self.pos_to_volt((x, y, z)), start=True)
         self.x, self.y, self.z = x, y, z
 
-    def PosToVolt(self, r):
+    def pos_to_volt(self, r):
         x = self.xRange
         y = self.yRange
         z = self.zRange
+
         v = self.vRange
         v0 = v[0]
         dv = v[1]-v[0]
@@ -455,6 +456,9 @@ class Scanner( MultiBoard ):
             vx = vy
             vy = vt            
         return numpy.vstack( (vx,vy,vz) )
+
+    def new_image(self):
+        pass
 
 class SquareWave(object):
     """Provides output of a square wave of finite length."""

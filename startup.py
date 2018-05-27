@@ -40,11 +40,21 @@ emod.JobManager().start()
 #########################################
 # hardware
 #########################################
-from hardware.mocking import Imager
-imager = Imager()
 
-#from TimeTagger import createMockingTagger
-#tagger = createMockingTagger()
+from TimeTagger import createTimeTagger
+tagger = createTimeTagger()
+from hardware.microwave_sources import SMIQ
+microwave = SMIQ()
+
+from measurements.time_trace import TimeTrace
+timetrace = TimeTrace(tagger)
+timetrace.edit_traits()
+
+from hardware.nidaq import Scanner
+from hardware.nidaq import PulseTrainCounter
+scanner = Scanner('/Dev1/ctr1', '/Dev1/ctr0', '/Dev1/PFI8', '/Dev1/ao0:2', (-100.,100.), (-100.,100.), (-100.,100.), (-10.,10.))
+odmr_counter = PulseTrainCounter('/Dev1/ctr1', '/Dev1/ctr0', '/Dev1/PFI8')
+
 
 #########################################
 # example how to define a little panel
@@ -55,12 +65,12 @@ imager = Imager()
 #from traitsui.api import View, Item, Group
 
 #class HardwarePanel( HasTraits ):
-#    
+#
 #    laser   = Instance( hardware.laser.Laser )
 #    mirror  = Instance( hardware.flip_mirror.FlipMirror )
 #    stage   = Instance( hardware.apt_stage.RotationStageTraits )
 #    coil    = Instance( hardware.hameg.HMP2030Traits )
-#    
+#
 #    traits_view = View(Group(Item('laser', style='custom', show_label=False),
 #                             Item('mirror', style='custom', show_label=False),
 #                             Item('stage', style='custom', show_label=False),
@@ -68,7 +78,7 @@ imager = Imager()
 #                             ),
 #                       title='Hardware Panel'
 #                       )
-#    
+#
 #hardware_panel = HardwarePanel(laser=laser, mirror=flip_mirror, stage=rotation_stage, coil=coil)
 #hardware_panel.edit_traits()
 
@@ -76,11 +86,22 @@ imager = Imager()
 #########################################
 # create measurement widgets
 #########################################
+#from hardware.imager import TimeTaggerImager,Scanner
+
 from measurements.confocal import Confocal # a confocal scanner imaging tool
 from measurements.auto_focus import AutoFocus # auto focus on objects in the image
+from measurements.odmr import ODMR
 
-confocal = Confocal(imager)
+
+#CounterIn, CounterOut, TickSource, AOChannels, x_range, y_range, z_range, v_range=(0.,10.)
+
+
+
+confocal = Confocal(scanner)
 confocal.edit_traits()
 
-auto_focus = AutoFocus(imager, confocal)
+odmr = ODMR(microwave, odmr_counter)
+odmr.edit_traits()
+
+auto_focus = AutoFocus(scanner,confocal)
 auto_focus.edit_traits()

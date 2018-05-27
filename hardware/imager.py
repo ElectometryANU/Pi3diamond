@@ -236,7 +236,7 @@ class TimeTaggerImager():
             self._count.clear()
         else:
             self._n = n
-            self._count = CountBetweenMarkers(self.time_tagger, self.click_channel[0], self.begin_channel, CHANNEL_INVALID, n)
+            self._count = CountBetweenMarkers(self.tagger, self.click_channel, self.begin_channel, CHANNEL_INVALID, n)
         self.scanner.set_timing(seconds_per_point, 0.5)
         ext_line = np.append(line, line[:,-1].reshape((3,1)),axis=1)
         self.scanner.scan_line(ext_line)
@@ -273,7 +273,8 @@ class TimeTaggerImager():
         pass
 
 
-class HistogramImager( Imager ):
+#class HistogramImager( Imager ):
+class HistogramImager(TimeTaggerImager):  #barson edit
     """Acquire a multidimensional histogram in every pixel."""
     
     def __init__(self, scanner, time_tagger, start_channel=2, next_channel=4, binwidth=5000000, n_bins=2):

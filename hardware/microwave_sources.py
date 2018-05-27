@@ -28,10 +28,11 @@ import logging
 class SMIQ():
     """Provides control of SMIQ family microwave sources from Rhode und Schwarz with GPIB via visa."""
     _output_threshold = -90.0
-    
+
     def __init__(self, visa_address='GPIB0::28'):
         self.visa_address = visa_address
-        
+        self.rm = visa.ResourceManager()
+
     def _write(self, string):
         try: # if the connection is already open, this will work
             self.instr.write(string)
@@ -40,14 +41,14 @@ class SMIQ():
                 del self.instr
             except Exception:
                 pass
-            self.instr = visa.instrument(self.visa_address)
+            self.instr = self.rm.open_resource(self.visa_address)
             self.instr.write(string)
-        
+
     def _ask(self, str):
         try:
             val = self.instr.ask(str)
         except:
-            self.instr = visa.instrument(self.visa_address)
+            self.instr = self.rm.open_resource(self.visa_address)
             val = self.instr.ask(str)
         return val
 
@@ -98,8 +99,8 @@ class SMIQ():
         self._write(':TRIG1:LIST:SOUR EXT')
         # we switch frequency on negative edge. Thus, the first square pulse of the train
         # is first used for gated count and then the frequency is increased. In this way
-        # the first frequency in the list will correspond exactly to the first acquired count. 
-        self._write(':TRIG1:SLOP NEG') 
+        # the first frequency in the list will correspond exactly to the first acquired count.
+        self._write(':TRIG1:SLOP NEG')
         self._write(':LIST:MODE STEP')
         self._write(':FREQ:MODE LIST')
         self._write('*WAI')
@@ -114,10 +115,10 @@ class SMIQ():
 class SMR20():
     """Provides control of SMR20 microwave source from Rhode und Schwarz with GPIB via visa."""
     _output_threshold = -90.0
-    
+
     def __init__(self, visa_address='GPIB0::28'):
         self.visa_address = visa_address
-        
+
     def _write(self, string):
         try: # if the connection is already open, this will work
             self.instr.write(string)
@@ -126,14 +127,14 @@ class SMR20():
                 del self.instr
             except Exception:
                 pass
-            self.instr = visa.instrument(self.visa_address)
+            self.instr = self.rm.open_resource(self.visa_address)
             self.instr.write(string)
-        
+
     def _ask(self, str):
         try:
             val = self.instr.ask(str)
         except:
-            self.instr = visa.instrument(self.visa_address)
+            self.instr = self.rm.open_resource(self.visa_address)
             val = self.instr.ask(str)
         return val
 
@@ -208,11 +209,11 @@ class HybridMicrowaveSourceSMIQNIDAQ():
         source sweeps over the frequencies. 'seconds_per_point' specifies
         the time in seconds that the source spends on each frequency step.
         A sweep is excecute by the 'doSweep' method."""
-        
+
         # in any case set the CW power
         self.source.setPower(power)
         self.square_wave.setTiming(seconds_per_point)
-        
+
         try: length=len(frequency)
         except TypeError: length=0
 
@@ -231,5 +232,3 @@ class HybridMicrowaveSourceSMIQNIDAQ():
         #self.source.resetListPos()
         self.square_wave.setLength(self._length)
         self.square_wave.output()
-
-

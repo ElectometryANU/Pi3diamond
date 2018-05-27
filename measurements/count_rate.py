@@ -136,7 +136,7 @@ class TimeTrace( Job, GetSetItemsMixin ):
         plot.tools.append(SaveTool(plot))        
         return plot
     
-    @on_trait_change('c_enable0,c_enable1,c_enable2,c_enable3,c_enable4,c_enable5,c_enable6,c_enable7)
+    @on_trait_change('c_enable0,c_enable1,c_enable2,c_enable3,c_enable4,c_enable5,c_enable6,c_enable7')
     def _replot(self):
         
         self.TracePlot = Plot(self.plot_data, width=500, height=500, resizable='hv')

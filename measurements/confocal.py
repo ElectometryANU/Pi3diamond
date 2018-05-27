@@ -33,7 +33,7 @@ from traitsui.api import View, Item, Group, HGroup, VGroup, Tabbed, EnumEditor, 
 from enable.api import ComponentEditor, Component
 from chaco.api import CMapImagePlot, ArrayPlotData, DataRange1D,\
                       RdBu, reverse, ColorBar, LinearMapper, DataLabel, PlotLabel
-                      
+
 RdBu_r = reverse(RdBu)
 #import chaco.api
 from chaco.tools.cursor_tool import CursorTool2D
@@ -47,26 +47,26 @@ from tools.utility import GetSetItemsMixin, GetSettableHistory as History
 class Confocal( ManagedJob, GetSetItemsMixin ):
     """
     A confocal imaging widget.
-    
+
     It uses a 3 axis piezo scanner combined with some sort
     of photon counting hardware to acquire and display
     images by point scanning. We call the combination
     of the latter two an "imager".
-    
+
     This widget allows you to acquire, save and load
     microscope images, or to move the laser focus around
     manually, using the cross hair or sliders.
-    
+
     you can do x-y images, as well as x-z and y-z images,
     i.e. horizontal cuts as well as cross sections through
     the sample.
     """
-    
+
     # overwrite default priority from ManagedJob (default 0)
     priority = 9
 
     resolution = Range(low=1, high=1000, value=100, desc='Number of point in long direction', label='resolution', auto_set=False, enter_set=True)
-    seconds_per_point = Range(low=1e-3, high=10, value=0.005, desc='Seconds per point [s]', label='Seconds per point [s]', mode='text', auto_set=False, enter_set=True)
+    seconds_per_point = Range(low=1e-3, high=10, value=0.01, desc='Seconds per point [s]', label='Seconds per point [s]', mode='text', auto_set=False, enter_set=True)
     bidirectional = Bool( True )
     return_speed = Range(low=1.0, high=100., value=10., desc='Multiplier for return speed of Scanner if mode is monodirectional', label='return speed', mode='text', auto_set=False, enter_set=True)
     constant_axis = Enum('z', 'x', 'y',
@@ -100,7 +100,7 @@ class Confocal( ManagedJob, GetSetItemsMixin ):
     figure_container    = Instance( HPlotContainer, editor=ComponentEditor() )
     z_label_text    = Str('z:0.0')
     cursor_position = Property(depends_on=['x','y','z','constant_axis'])
-    
+
     get_set_items=['constant_axis', 'X', 'Y', 'thresh_high', 'thresh_low', 'seconds_per_point',
                    'return_speed', 'bidirectional', 'history', 'image', 'z_label_text',
                    'resolution', 'x', 'x1', 'x2', 'y', 'y1', 'y2', 'z', 'z1', 'z2']
@@ -109,12 +109,12 @@ class Confocal( ManagedJob, GetSetItemsMixin ):
         super(Confocal, self).__init__(**kwargs)
         self.imager = imager
         self.pulser = pulser
-        
+
         # imager position
         self.add_trait('x', Range(low=imager.get_x_range()[0], high=imager.get_x_range()[1], value=0.5*(imager.get_x_range()[0]+imager.get_x_range()[1]), desc='x [micron]', label='x [micron]', mode='slider'))
         self.add_trait('y', Range(low=imager.get_y_range()[0], high=imager.get_y_range()[1], value=0.5*(imager.get_y_range()[0]+imager.get_y_range()[1]), desc='y [micron]', label='y [micron]', mode='slider'))
         self.add_trait('z', Range(low=imager.get_z_range()[0], high=imager.get_z_range()[1], value=0.5*(imager.get_z_range()[0]+imager.get_z_range()[1]), desc='z [micron]', label='z [micron]', mode='slider'))
-    
+
         # imagging parameters
         self.add_trait('x1', Range(low=imager.get_x_range()[0], high=imager.get_x_range()[1], value=imager.get_x_range()[0], desc='x1 [micron]', label='x1', editor=TextEditor(auto_set=False, enter_set=True, evaluate=float, format_str='%.2f')))
         self.add_trait('y1', Range(low=imager.get_y_range()[0], high=imager.get_y_range()[1], value=imager.get_y_range()[0], desc='y1 [micron]', label='y1', editor=TextEditor(auto_set=False, enter_set=True, evaluate=float, format_str='%.2f')))
@@ -122,7 +122,7 @@ class Confocal( ManagedJob, GetSetItemsMixin ):
         self.add_trait('x2', Range(low=imager.get_x_range()[0], high=imager.get_x_range()[1], value=imager.get_x_range()[1], desc='x2 [micron]', label='x2', editor=TextEditor(auto_set=False, enter_set=True, evaluate=float, format_str='%.2f')))
         self.add_trait('y2', Range(low=imager.get_y_range()[0], high=imager.get_y_range()[1], value=imager.get_y_range()[1], desc='y2 [micron]', label='y2', editor=TextEditor(auto_set=False, enter_set=True, evaluate=float, format_str='%.2f')))
         self.add_trait('z2', Range(low=imager.get_z_range()[0], high=imager.get_z_range()[1], value=imager.get_z_range()[1], desc='z2 [micron]', label='z2', editor=TextEditor(auto_set=False, enter_set=True, evaluate=float, format_str='%.2f')))
-        
+
         self.X = np.linspace(imager.get_x_range()[0], imager.get_x_range()[-1], self.resolution+1)
         self.Y = np.linspace(imager.get_y_range()[0], imager.get_y_range()[-1], self.resolution+1)
         self.image = np.zeros((len(self.X), len(self.Y)))
@@ -150,7 +150,7 @@ class Confocal( ManagedJob, GetSetItemsMixin ):
     def _set_imager_position(self):
         if self.state != 'run':
             self.imager.set_position(self.x, self.y, self.z)
-    
+
     @cached_property
     def _get_cursor_position(self):
         if self.constant_axis == 'x':
@@ -159,7 +159,7 @@ class Confocal( ManagedJob, GetSetItemsMixin ):
             return self.x, self.z
         elif self.constant_axis == 'z':
             return self.x, self.y
-    
+
     def _set_cursor_position(self, position):
         if self.constant_axis == 'x':
             self.z, self.y = position
@@ -167,9 +167,9 @@ class Confocal( ManagedJob, GetSetItemsMixin ):
             self.x, self.z = position
         elif self.constant_axis == 'z':
             self.x, self.y = position
-    
+
     # image acquisition
-    
+
     def _run(self):
         """Acquire a scan"""
 
@@ -180,11 +180,11 @@ class Confocal( ManagedJob, GetSetItemsMixin ):
             self.update_mesh()
             X = self.X
             Y = self.Y
-            
+
             XP = X[::-1]
-    
+
             self.image=np.zeros((len(Y),len(X)))
-            
+
             """
             if not self.bidirectional:
                 self.imager.initImageScan(len(X), len(Y), self.seconds_per_point, return_speed=self.return_speed)
@@ -199,7 +199,7 @@ class Confocal( ManagedJob, GetSetItemsMixin ):
                 else:
                     XL = X
                 YL = y * np.ones(X.shape)
-                
+
                 if self.constant_axis == 'x':
                       const = self.x * np.ones(X.shape)
                       Line = np.vstack( (const, YL, XL) )
@@ -209,7 +209,7 @@ class Confocal( ManagedJob, GetSetItemsMixin ):
                 elif self.constant_axis == 'z':
                       const = self.z * np.ones(X.shape)
                       Line = np.vstack( (XL, YL, const) )
-                
+
                 if self.bidirectional:
                     c = self.imager.scan_line(Line, self.seconds_per_point)
                 else:
@@ -222,13 +222,13 @@ class Confocal( ManagedJob, GetSetItemsMixin ):
                     self.image[i,:] = c[-1::-1]
                 else:
                     self.image[i,:] = c[:]
-                
+
                 """
                 self.imager.doImageLine(Line)
                 self.image = self.imager.getImage()
                 """
                 self.trait_property_changed('image', self.image)
-          
+
                 if self.constant_axis == 'x':
                     self.z_label_text='x:%.2f'%self.x
                 elif self.constant_axis == 'y':
@@ -237,12 +237,12 @@ class Confocal( ManagedJob, GetSetItemsMixin ):
                     self.z_label_text='z:%.2f'%self.z
 
             """
-            # block at the end until the image is ready 
-            if not threading.current_thread().stop_request.isSet(): 
+            # block at the end until the image is ready
+            if not threading.current_thread().stop_request.isSet():
                 self.image = self.imager.getImage(1)
                 self._image_changed()
             """
-                
+
             self.imager.set_position(self.x, self.y, self.z)
 
             #save scan data to history
@@ -252,7 +252,7 @@ class Confocal( ManagedJob, GetSetItemsMixin ):
             self.state = 'idle'
 
     # plotting
-    
+
     def _create_plot(self):
         plot_data = ArrayPlotData(image=self.image)
         plot = Plot(plot_data, width=500, height=500, resizable='hv', aspect_ratio=1.0, padding=8, padding_left=32, padding_bottom=32)
@@ -295,7 +295,7 @@ class Confocal( ManagedJob, GetSetItemsMixin ):
         x2=self.X[-1]
         y1=self.Y[0]
         y2=self.Y[-1]
-        
+
         self.figure.aspect_ratio = (x2-x1) / float((y2-y1))
         self.figure.index_range.low = x1
         self.figure.index_range.high = x2
@@ -319,10 +319,10 @@ class Confocal( ManagedJob, GetSetItemsMixin ):
                 self.x = 0.5*(li+hi)
             if not lv<self.y<hv:
                 self.y = 0.5*(lv+hv)
-        
+
     def center_cursor(self):
-        i = 0.5 * (self.figure.index_range.low + self.figure.index_range.high) 
-        v = 0.5 * (self.figure.value_range.low + self.figure.value_range.high) 
+        i = 0.5 * (self.figure.index_range.low + self.figure.index_range.high)
+        v = 0.5 * (self.figure.value_range.low + self.figure.value_range.high)
         if self.constant_axis == 'x':
             self.z = i
             self.y = v
@@ -332,16 +332,16 @@ class Confocal( ManagedJob, GetSetItemsMixin ):
         elif self.constant_axis == 'z':
             self.x = i
             self.y = v
-    
+
     def _constant_axis_changed(self):
         self.update_mesh()
-        self.image = np.zeros((len(self.X), len(self.Y)))  
+        self.image = np.zeros((len(self.X), len(self.Y)))
         self.update_axis()
         self.set_mesh_and_aspect_ratio()
 
     def update_image_plot(self):
         self.plot_data.set_data('image', self.image)
-    
+
     """
     def _colormap_changed(self, new):
         data = self.figure.datasources['image']
@@ -355,7 +355,7 @@ class Confocal( ManagedJob, GetSetItemsMixin ):
             if isinstance(item, DataLabel) and item.label_format in self.labels:
                 item.visible = new
         self.scan_plot.request_redraw()
-        
+
     def get_label_index(self, key):
         for index, item in enumerate(self.scan_plot.overlays):
             if isinstance(item, DataLabel) and item.label_format == key:
@@ -408,7 +408,7 @@ class Confocal( ManagedJob, GetSetItemsMixin ):
         plot.overlays.pop(index)
         plot.request_redraw()
         self.labels.pop(key)
-        
+
     def remove_all_labels(self):
         plot = self.scan_plot
         new_overlays = []
@@ -418,7 +418,7 @@ class Confocal( ManagedJob, GetSetItemsMixin ):
         plot.overlays = new_overlays
         plot.request_redraw()
         self.labels.clear()
-        
+
     @on_trait_change('constant_axis')
     def relocate_labels(self):
         for item in self.scan_plot.overlays:
@@ -438,21 +438,21 @@ class Confocal( ManagedJob, GetSetItemsMixin ):
         elif self.constant_axis == 'y':
             self.x1 = self.figure.index_range.low
         elif self.constant_axis == 'z':
-            self.x1 = self.figure.index_range.low 
+            self.x1 = self.figure.index_range.low
     def update_axis_hi(self):
         if self.constant_axis == 'x':
             self.z2 = self.figure.index_range.high
         elif self.constant_axis == 'y':
             self.x2 = self.figure.index_range.high
         elif self.constant_axis == 'z':
-            self.x2 = self.figure.index_range.high 
+            self.x2 = self.figure.index_range.high
     def update_axis_lv(self):
         if self.constant_axis == 'x':
             self.y1 = self.figure.value_range.low
         elif self.constant_axis == 'y':
             self.z1 = self.figure.value_range.low
         elif self.constant_axis == 'z':
-            self.y1 = self.figure.value_range.low 
+            self.y1 = self.figure.value_range.low
     def update_axis_hv(self):
         if self.constant_axis == 'x':
             self.y2 = self.figure.value_range.high
@@ -460,7 +460,7 @@ class Confocal( ManagedJob, GetSetItemsMixin ):
             self.z2 = self.figure.value_range.high
         elif self.constant_axis == 'z':
             self.y2 = self.figure.value_range.high
-    
+
     def update_axis(self):
         self.update_axis_li()
         self.update_axis_hi()
@@ -490,7 +490,7 @@ class Confocal( ManagedJob, GetSetItemsMixin ):
         else:
             self.Y = np.linspace(y1,y2,self.resolution)
             self.X = np.linspace(x1,x2,int(self.resolution*(x2-x1)/(y2-y1)))
-        
+
     # GUI buttons
 
     def _history_back_fired(self):
@@ -516,7 +516,7 @@ class Confocal( ManagedJob, GetSetItemsMixin ):
 
     def save_image(self, filename=None):
         self.save_figure(self.figure_container, filename)
-        
+
     traits_view = View(VGroup(HGroup(Item('submit_button', show_label=False),
                                      Item('remove_button', show_label=False),
                                      Item('priority'),
@@ -527,7 +527,7 @@ class Confocal( ManagedJob, GetSetItemsMixin ):
                               HGroup(Item('filename',springy=True),
                                      Item('save_button', show_label=False),
                                      Item('load_button', show_label=False)
-                                     ),                        
+                                     ),
                               Item('figure_container', show_label=False, resizable=True,
                                    enabled_when='state != "run"'
                                    ),
@@ -557,7 +557,7 @@ class Confocal( ManagedJob, GetSetItemsMixin ):
                        ),
                        title='Confocal', buttons=[], resizable=True, x=0, y=0
                        )
-    
+
 if __name__ == '__main__':
 
     logging.getLogger().addHandler(logging.StreamHandler())
@@ -567,9 +567,8 @@ if __name__ == '__main__':
     from tools.emod import JobManager
     JobManager().start()
 
-    from hardware.mocking import Imager
-    imager = Imager()
-    
+    from hardware.imager import TimeTaggerImager
+    imager = TimeTaggerImager()
+
     confocal = Confocal(imager)
     confocal.edit_traits()
-    

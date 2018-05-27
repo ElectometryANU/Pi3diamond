@@ -29,7 +29,7 @@ from enable.api       import ComponentEditor
 from chaco.api        import PlotAxis, CMapImagePlot, ColorBar, LinearMapper, ArrayPlotData, RdBu, reverse, PlotLabel
 RdBu_r = reverse(RdBu)
 
-from tools.chaco_addons import SaveHPlotContainer as HPlotContainer, SavePlot as Plot, SaveTool 
+from tools.chaco_addons import SaveHPlotContainer as HPlotContainer, SavePlot as Plot, SaveTool
 
 # date and time tick marks
 from chaco.scales.api import CalendarScaleSystem
@@ -52,20 +52,20 @@ from analysis.fitting import fit, Gaussian
 class AutoFocus( ManagedJob, GetSetItemsMixin ):
     """
     An autofocus tool.
-    
+
     It uses an imager and a confocal widget.
-    
+
     To focus in x-y-z, it aquires a small square
     image and finds the maximum intensity and subsequently
     performs a line scan in z-direction and finds the maximum.
-    
+
     It offers several ways to find the maximum,
     including the absolute maximum, gaussian fit
     and spine fit (the latter only for the z-line scan).
-    
+
     The widget can auto_focus periodically and recall
     the image drift.
-    
+
     The widget offers the possibility to mark target points.
     It stores their positions and marks them in the confocal widget.
     """
@@ -75,11 +75,11 @@ class AutoFocus( ManagedJob, GetSetItemsMixin ):
 
     confocal = Instance( Confocal )
 
-    x1                  = Float(default_value=-1.,   desc='Size of XY Scan',                 label='x1 [micron]',           mode='text',  auto_set=False, enter_set=True)
-    x2                  = Float(default_value=1.,    desc='Size of XY Scan',                 label='x2 [micron]',           mode='text',  auto_set=False, enter_set=True)
-    y1                  = Float(default_value=-1.,   desc='Size of XY Scan',                 label='y1 [micron]',           mode='text',  auto_set=False, enter_set=True)
-    y2                  = Float(default_value=1.,    desc='Size of XY Scan',                 label='y2 [micron]',           mode='text',  auto_set=False, enter_set=True)
-    z1                  = Float(default_value=0.,    desc='Size of Z Scan',                  label='z1 [micron]',            mode='text',  auto_set=False, enter_set=True)
+    x1                  = Float(default_value=-0.5,   desc='Size of XY Scan',                 label='x1 [micron]',           mode='text',  auto_set=False, enter_set=True)
+    x2                  = Float(default_value=0.5,    desc='Size of XY Scan',                 label='x2 [micron]',           mode='text',  auto_set=False, enter_set=True)
+    y1                  = Float(default_value=-0.5,   desc='Size of XY Scan',                 label='y1 [micron]',           mode='text',  auto_set=False, enter_set=True)
+    y2                  = Float(default_value=0.5,    desc='Size of XY Scan',                 label='y2 [micron]',           mode='text',  auto_set=False, enter_set=True)
+    z1                  = Float(default_value=-1.,    desc='Size of Z Scan',                  label='z1 [micron]',            mode='text',  auto_set=False, enter_set=True)
     z2                  = Float(default_value=1.,    desc='Size of Z Scan',                  label='z2 [micron]',            mode='text',  auto_set=False, enter_set=True)
     step_xy                 = Float(default_value=0.1,  label='Step XY [micron]',     desc='Step of XY Scan',           mode='text',  auto_set=False, enter_set=True)
     step_z                  = Float(default_value=0.1,  label='Step Z [micron]',      desc='Step of Z Scan',                  mode='text',  auto_set=False, enter_set=True)
@@ -98,9 +98,9 @@ class AutoFocus( ManagedJob, GetSetItemsMixin ):
     fit_method_xy = Enum('Maximum', 'Gaussian', desc='Fit Method for XY Scan',    label='XY Fit Method')
     fit_method_z  = Enum('Maximum', 'Gaussian', 'Spline', desc='Fit Method for Z Scan',     label='Z Fit Method')
     smoothing  = Float(default_value=1e8,    desc='spline smoothing parameter',                  label='smoothing',            mode='text',  auto_set=False, enter_set=True)
-    
+
     fit_text = Str('')
-    
+
     X = Array(value=np.array((0.,1.)) )
     Y = Array(value=np.array((0.,1.)) )
     Z = Array(value=np.array((-1.,1.)) )
@@ -111,10 +111,10 @@ class AutoFocus( ManagedJob, GetSetItemsMixin ):
     data_fit_xy = Array( )
     data_fit_z = Array( value=np.array((0,0)) )
 
-    targets         = Instance( {}.__class__, factory={}.__class__ ) # Dict traits are no good for pickling, therefore we have to do it with an ordinary dictionary and take care about the notification manually 
+    targets         = Instance( {}.__class__, factory={}.__class__ ) # Dict traits are no good for pickling, therefore we have to do it with an ordinary dictionary and take care about the notification manually
     target_list     = Instance( list, factory=list, args=([None],) ) # list of targets that are selectable in current_target editor
     current_target  = Enum(values='target_list')
-        
+
     drift               = Array( value=np.array(((0,0,0,),)) )
     drift_time          = Array( value=np.array((0,)) )
     current_drift       = Array( value=np.array((0,0,0)) )
@@ -129,9 +129,9 @@ class AutoFocus( ManagedJob, GetSetItemsMixin ):
     forget_drift_button    = Button(label='Forget Drift', desc='forget the accumulated drift and reset drift plot')
     next_target_button      = Button(label='Next Target', desc='switch to next available target')
     undo_button       = Button(label='undo', desc='undo the movement of the stage')
-    
+
     previous_state = Instance( () )
-    
+
     plot_data_image = Instance( ArrayPlotData )
     plot_data_line  = Instance( ArrayPlotData )
     plot_data_drift = Instance( ArrayPlotData )
@@ -159,7 +159,7 @@ class AutoFocus( ManagedJob, GetSetItemsMixin ):
         self.on_trait_change(self.update_plot_drift_value, 'drift', dispatch='ui')
         self.on_trait_change(self.update_plot_drift_index, 'drift_time', dispatch='ui')
         self.sync_trait('fit_text', self.image_label, 'text')
-    
+
     @on_trait_change('next_target_button')
     def next_target(self):
         """Convenience method to switch to the next available target."""
@@ -206,11 +206,11 @@ class AutoFocus( ManagedJob, GetSetItemsMixin ):
         self.fit_text = 'max: {:.0f}\nx: {:.2f}, y: {:.2f})'.format(a,xp,yp)
         self.data_fit_xy = self.data_xy
         return xp, yp
-            
+
     def fit_xy_gaussian(self):
         pars = gaussfit(self.data_xy, circle=True, rotate=False)
         self.fit_pars = pars
-        
+
         xp, yp, width = integer_to_mesh(self.X, self.Y, pars)
 
         amp = pars[1]
@@ -223,12 +223,12 @@ class AutoFocus( ManagedJob, GetSetItemsMixin ):
             for j in range(data.shape[1]):
                 data[i,j]=func(i,j)
         self.data_fit_xy = data
-        
+
         return xp, yp
-            
+
     def fit_xy(self):
         if self.fit_method_xy == 'Maximum':
-            xp, yp = self.fit_xy_max()                
+            xp, yp = self.fit_xy_max()
         elif self.fit_method_xy == 'Gaussian':
             raise NotImplementedError('you may find it in old code')
             #try:
@@ -273,21 +273,21 @@ class AutoFocus( ManagedJob, GetSetItemsMixin ):
             sort_map = self.Z.argsort()
             x = self.Z[sort_map]
             y = self.data_z[sort_map]
-            
+
             x1 = x[::2]
             y1 = y[::2]
             x2 = x[1::2]
             y2 = y[1::2]
-            
+
             s1 = UnivariateSpline (x1, y1, k=3, s=self.smoothing)
             s2 = UnivariateSpline (x2, y2, k=3, s=self.smoothing)
-            
+
             ind1 = s1(x1).argmax()
             ind2 = s2(x2).argmax()
-            
+
             x0 = 0.5*(x1[ind1]+x2[ind2])
             y0 = 0.5*(y1[ind1]+y2[ind2])
-            
+
             center = x0
             self.zfit = x0
             self.zfit_ind = x0
@@ -296,7 +296,7 @@ class AutoFocus( ManagedJob, GetSetItemsMixin ):
         else:
             raise ValueError('Unknown fit method')
         return center
-            
+
 
     def add_target(self, key, coordinates=None):
         if coordinates is None:
@@ -322,7 +322,7 @@ class AutoFocus( ManagedJob, GetSetItemsMixin ):
             return
         self.targets.pop(key)        # remove target from dictionary
         self.trait_property_changed('targets', self.targets)    # trigger event such that Enum is updated and Labels are redrawn
-        
+
     def remove_all_targets(self):
         self.targets = {}
 
@@ -337,10 +337,10 @@ class AutoFocus( ManagedJob, GetSetItemsMixin ):
         self.current_drift = np.array((0., 0., 0.))
         self.drift_time = np.array((time.time(),))
         self.drift = np.array(((0,0,0),))
-        
+
     def _add_target_button_fired(self):
         self.add_target( self.target_name )
-        
+
     def _remove_current_target_button_fired(self):
         self.remove_target( self.current_target )
 
@@ -353,9 +353,9 @@ class AutoFocus( ManagedJob, GetSetItemsMixin ):
             self.forget_drift()
 
     def _run(self):
-        
+
         logging.getLogger().debug("trying run.")
-        
+
         try:
             self.state='run'
             if self.current_target is None:
@@ -365,7 +365,7 @@ class AutoFocus( ManagedJob, GetSetItemsMixin ):
                 confocal = self.confocal
                 confocal.x, confocal.y, confocal.z = coordinates + self.current_drift
                 current_coordinates = self.focus()
-                self.current_drift = current_coordinates - coordinates  
+                self.current_drift = current_coordinates - coordinates
                 self.drift = np.append(self.drift, (self.current_drift,), axis=0)
                 self.drift_time = np.append(self.drift_time, time.time())
                 logging.getLogger().debug('Drift: %.2f, %.2f, %.2f'%tuple(self.current_drift))
@@ -379,11 +379,11 @@ class AutoFocus( ManagedJob, GetSetItemsMixin ):
     def focus_xy(self):
             safety = 0
             imager = self.imager
-            
+
             xp = self.confocal.x
             yp = self.confocal.y
             zp = self.confocal.z
-            
+
             if self.xy_absolute:
                 xmin = self.x1
                 xmax = self.x2
@@ -404,8 +404,8 @@ class AutoFocus( ManagedJob, GetSetItemsMixin ):
             XP = X[::-1]
 
             self.data_xy=np.zeros((len(Y),len(X)))
-            #self.image_plot.index.set_data(X, Y)  
-                        
+            #self.image_plot.index.set_data(X, Y)
+
             for i,y in enumerate(Y):
                 if threading.current_thread().stop_request.isSet():
                     break
@@ -415,31 +415,31 @@ class AutoFocus( ManagedJob, GetSetItemsMixin ):
                     XL = X
                 YL = y * np.ones(X.shape)
                 Line = np.vstack( (XL, YL, ZL) )
-                
+
                 c = imager.scan_line(Line, self.seconds_per_point_xy) #changed scanLine to scan_line
                 if i%2 == 0:
                     self.data_xy[i,:] = c[:]
                 else:
                     self.data_xy[i,:] = c[-1::-1]
-                
+
                 self.trait_property_changed('data_xy', self.data_xy)
             else:
                 xp, yp = self.fit_xy()
-                
+
             self.confocal.x = xp
-            self.confocal.y = yp 
+            self.confocal.y = yp
 
             logging.getLogger().info('Focus x,y: %.2f, %.2f' %(xp,yp))
-            
+
     def focus_z(self):
-        
+
             safety = 0
             imager = self.imager
-            
+
             xp = self.confocal.x
             yp = self.confocal.y
             zp = self.confocal.z
-            
+
             if self.z_absolute:
                 Z = np.hstack( ( np.arange(zp, self.z1, -self.step_z),
                                     np.arange(self.z1, self.z2, self.step_z),
@@ -465,7 +465,7 @@ class AutoFocus( ManagedJob, GetSetItemsMixin ):
             self.confocal.z = zp
 
             logging.getLogger().info('Focus z: %.2f' %zp)
-            
+
     def focus(self):
             """
             Focuses around current position in x, y, and z-direction.
@@ -498,7 +498,7 @@ class AutoFocus( ManagedJob, GetSetItemsMixin ):
     def _undo_button_fired(self):
         self.remove()
         self.undo()
-    
+
     def _plot_data_image_default(self):
         return ArrayPlotData(image=np.zeros((2,2)), fit=np.zeros((2,2)))
     def _plot_data_line_default(self):
@@ -507,8 +507,8 @@ class AutoFocus( ManagedJob, GetSetItemsMixin ):
         return ArrayPlotData(t=self.drift_time, x=self.drift[:,0], y=self.drift[:,1], z=self.drift[:,2])
 
     def _image_label_default(self):
-        return PlotLabel(text='', color='red', hjustify='left', vjustify='bottom', position=[10,10])    
-        
+        return PlotLabel(text='', color='red', hjustify='left', vjustify='bottom', position=[10,10])
+
     def _figure_image_default(self):
         plot = Plot(self.plot_data_image, width=100, height=100, padding=8, padding_left=48, padding_bottom=32)
         plot.img_plot('image', colormap=RdBu_r, name='image')
@@ -536,10 +536,10 @@ class AutoFocus( ManagedJob, GetSetItemsMixin ):
         container.add(plot)
         container.add(plot_fit)
         container.add(colorbar)
-        container.overlays.append(self.image_label)        
+        container.overlays.append(self.image_label)
         container.tools.append(SaveTool(container))
         return container
-        
+
     def _figure_line_default(self):
         plot = Plot(self.plot_data_line, width=100, height=100, padding=8, padding_left=64, padding_bottom=32)
         plot.plot(('x','y'), color='blue')
@@ -561,7 +561,7 @@ class AutoFocus( ManagedJob, GetSetItemsMixin ):
         plot.value_axis.title = 'drift [micron]'
         plot.legend.visible=True
         plot.tools.append(SaveTool(plot))
-        return plot        
+        return plot
 
     def _image_plot_default(self):
         return self.figure_image.components[0].plots['image'][0]
@@ -580,7 +580,7 @@ class AutoFocus( ManagedJob, GetSetItemsMixin ):
         if len(self.drift) == 1:
             self.plot_data_drift.set_data('x', np.array(()))
             self.plot_data_drift.set_data('y', np.array(()))
-            self.plot_data_drift.set_data('z', np.array(()))            
+            self.plot_data_drift.set_data('z', np.array(()))
         else:
             self.plot_data_drift.set_data('x', self.drift[:,0])
             self.plot_data_drift.set_data('y', self.drift[:,1])
@@ -653,11 +653,10 @@ if __name__ == '__main__':
 
     from hardware.mocking import Imager
     imager = Imager()
-    
+
     from measurements.confocal import Confocal
     confocal = Confocal(imager)
     confocal.edit_traits()
-    
+
     auto_focus = AutoFocus(imager, confocal)
     auto_focus.edit_traits()
-    

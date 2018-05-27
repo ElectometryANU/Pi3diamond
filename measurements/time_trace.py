@@ -32,20 +32,20 @@ from enable.api         import ComponentEditor
 from chaco.api          import ArrayPlotData, Plot
 from pyface.timer.api   import Timer
 
-#from TimeTagger import Counter
-from hardware.mocking import Counter
+from TimeTagger import Counter
+#from hardware.mocking import Counter
 
 from tools.utility import GetSetItemsMixin
 
 class TimeTrace( GetSetItemsMixin ):
 
     number_of_points = Int(200, desc='Length of Count Trace', label='Number of points', mode='text', auto_set=False, enter_set=True)
-    seconds_per_point = Float(0.1, desc='Seconds per point [s]', label='Seconds per point [s]', mode='text', auto_set=False, enter_set=True)
+    seconds_per_point = Float(0.05, desc='Seconds per point [s]', label='Seconds per point [s]', mode='text', auto_set=False, enter_set=True)
 
     # trace data
     count_rate = Array()
     time = Array()
-    
+
     enable_0 = Bool(True, label='channel 0', desc='enable channel 0')
     enable_1 = Bool(False, label='channel 1', desc='enable channel 1')
     enable_2 = Bool(False, label='channel 2', desc='enable channel 2')
@@ -54,12 +54,12 @@ class TimeTrace( GetSetItemsMixin ):
     enable_5 = Bool(False, label='channel 5', desc='enable channel 5')
     enable_6 = Bool(False, label='channel 6', desc='enable channel 6')
     enable_7 = Bool(False, label='channel 7', desc='enable channel 7')
-    
+
     channels = Instance( list, factory=list )
 
     plot = Instance( Plot )
     plot_data = Instance( ArrayPlotData )
-    
+
     start_button = Button(label='start', show_label=False)
     stop_button = Button(label='stop', show_label=False)
     clear_button = Button(label='clear', show_label=False)
@@ -86,9 +86,9 @@ class TimeTrace( GetSetItemsMixin ):
         self._counter = Counter(self.tagger, self.channels, int(self.seconds_per_point*1e12), self.number_of_points)
         self.time = self._counter.getIndex() * 1e-12
         self.count_rate = self._counter.getData() / self.seconds_per_point
-        self._timer = Timer(200, self._refresh_data)
+        self._timer = Timer(100, self._refresh_data)
         self._timer.Start()
-        
+
     def _refresh_data(self):
         self.count_rate = self._counter.getData() / self.seconds_per_point
 
@@ -118,18 +118,18 @@ class TimeTrace( GetSetItemsMixin ):
             plot.legend.visible = True
         else:
             plot.legend.visible = False
-            
+
         self.plot_data = data
         self.plot = plot
-    
+
     def _clear_button_fired(self):
         self._counter.clear()
         self.count_rate = self._counter.getData()
-    
+
     def _start_button_fired(self):
         self._counter.start()
         self._timer.Start()
-    
+
     def _stop_button_fired(self):
         self._counter.stop()
         self._timer.Stop()
@@ -171,11 +171,12 @@ if __name__=='__main__':
     logging.getLogger().addHandler(logging.StreamHandler())
     logging.getLogger().setLevel(logging.DEBUG)
     logging.getLogger().info('Starting logger.')
-    
+
     #from TimeTagger import createMockingTagger
-    from hardware.mocking import createMockingTagger
-    tagger = createMockingTagger()
-    
+    #from hardware.mocking import createMockingTagger
+    from TimeTagger import createTimeTagger
+    #tagger = createMockingTagger()
+    tagger = createTimeTagger()
+
     time_trace = TimeTrace(tagger)
     time_trace.edit_traits()
-    
